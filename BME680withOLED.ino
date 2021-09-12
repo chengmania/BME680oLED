@@ -23,13 +23,8 @@
 #include <Adafruit_SSD1306.h>
 
 #define SEALEVELPRESSURE_HPA (1013.25)  //set sea level for sampling purposes
-
-
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
-
-
-
 #define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
@@ -86,7 +81,7 @@ void loop() {
   display.print(bme.gas_resistance / 1000.0);
   display.println(" KOhms");
 
-  //Altitude does not display due to screen size... TODO: add rotatry knob functionality to switch between items
+  //Altitude does not display due to screen size... TODO: add rotary knob functionality to switch between items
   //display.print("Alt = ");
   //display.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
   //display.println(" m");
