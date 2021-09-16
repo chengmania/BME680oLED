@@ -11,6 +11,9 @@
     BME680 SDA  -> UNO A4
     BME680 GND  -> Ground
     BME680 VCC  -> UNO 5V
+
+    BUTTON PIN -> UNO 3
+
 */
 
 //Libraries for I2C instances of the 128x32 oLED and BME680
@@ -32,18 +35,24 @@
 #define MEDIUM 7
 #define OKAY   6
 
+#define BUTTONPIN 3
+
 //actviate the MBE680
 Adafruit_BME680 bme; // I2C
 
 //activate the oLED display (TODO: eresearch an other library to lighten the weight of the code.
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+//switch value setup
+int switchValue = 0;
+
 void setup() {
 
   pinMode(DANGER, OUTPUT);
   pinMode(MEDIUM, OUTPUT);
   pinMode(OKAY, OUTPUT);
-  
+  pinMode(BUTTONPIN, INPUT);
+
 
   //initialize the BME680
   bme.begin();
@@ -57,60 +66,112 @@ void setup() {
   bme.setPressureOversampling(BME680_OS_4X);
   bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
   bme.setGasHeater(320, 150); // 320*C for 150 ms
-  
+
   //Set text size and position
   display.setTextSize(0);             // Normal 1:1 pixel scale
   display.setTextColor(SSD1306_WHITE);        // Draw white text
-  
+
 
 }
 
 void loop() {
   //Grab data from the BME sensor
   bme.performReading();
-  
+
   display.clearDisplay();  // clear display to reset output contents
   delay(20); //give display time to clear
-  display.setCursor(0, 0);            // Start at top-left corner
-  
-  //Enter Display data into on oLED display buffer
-  display.print("Temperature: ");
-  display.print(bme.temperature);
-  display.println(" C");
-  
- 
-  display.print("Humidity:    ");
-  display.print(bme.humidity);
-  display.println(" %");
- 
 
-  display.print("Pressure: ");
-  display.print(bme.pressure / 100.0);
-  display.println(" hPa");
 
-  display.print("Gas:      ");
-  display.print(bme.gas_resistance / 1000.0);
-  display.println(" KOhms");
+  switch (switchValue) {
+    case 1: //Temp Dipslay
+      display.setTextSize(0);
+      display.setCursor(30, 0);
+      display.print("Temperature:");
+      display.setCursor(23, 15);
+      display.setTextSize(2);
+      display.print(bme.temperature);
+      display.println(" C");
+      break;
+    case 2: //Humidity
+      display.setTextSize(0);
+      display.setCursor(37, 0);
+      display.print("Humidity:");
+      display.setCursor(23, 15);
+      display.setTextSize(2);
+      display.print(bme.humidity);
+      display.println(" %");
+      break;
+    case 3: //Pressure
+      display.setTextSize(0);
+      display.setCursor(37, 5);
+      display.print("Pressure:");
+      display.setCursor(30, 20);
+      display.print(bme.pressure / 100.0);
+      display.print(" hPa");
+      break;
+    case 4: //gas
+      display.setTextSize(0);
+      display.setCursor(55, 5);
+      display.print("Gas:");
+      display.setCursor(30, 20);
+      display.print(bme.gas_resistance / 1000.0);
+      display.println(" KOhms");
+      break;
+    case 5: //altitude
+     display.setTextSize(0);
+      display.setCursor(42, 5);
+      display.print("Altitude: ");
+      display.setCursor(45, 20);
+      display.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
+      display.println(" m");
+      break;
+    default:  //summary screen
+      display.setTextSize(0);
+      display.setCursor(0, 0);            // Start at top-left corner
+      //Enter Display data into on oLED display buffer
+      display.print("Temperature: ");
+      display.print(bme.temperature);
+      display.println(" C");
 
-  if ((bme.gas_resistance / 1000.0) > 25.00) { 
+      display.print("Humidity:    ");
+      display.print(bme.humidity);
+      display.println(" %");
+
+      display.print("Pressure: ");
+      display.print(bme.pressure / 100.0);
+      display.println(" hPa");
+
+      display.print("Gas:      ");
+      display.print(bme.gas_resistance / 1000.0);
+      display.println(" KOhms");
+
+      //display.print("Altitude: ");
+      //display.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
+      //display.println(" m");
+      break;
+  }
+
+  if ((bme.gas_resistance / 1000.0) > 25.00) {
     digitalWrite(OKAY, HIGH);
     digitalWrite(MEDIUM, LOW);
     digitalWrite(DANGER, LOW);
-  }else if ((bme.gas_resistance / 1000.0) < 25.00 && (bme.gas_resistance / 1000.0) > 10 ){
+  } else if ((bme.gas_resistance / 1000.0) < 25.00 && (bme.gas_resistance / 1000.0) > 10 ) {
     digitalWrite(OKAY, LOW);
     digitalWrite(MEDIUM, HIGH);
     digitalWrite(DANGER, LOW);
-  }else {
+  } else {
     digitalWrite(OKAY, LOW);
     digitalWrite(MEDIUM, LOW);
     digitalWrite(DANGER, HIGH);
   }
-
-  //display.print("Altitude: ");
-  //display.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
-  //display.println(" m");
-
   //Display data
   display.display();
-  delay(2000); // Pause for 2 seconds
+  //delay(2000); // Pause for 2 seconds
+  
+    if (digitalRead(BUTTONPIN) == HIGH)
+    {
+    switchValue++;
+    switchValue > 5 ? switchValue = 0 : switchValue = switchValue; //short hand If statement to stay below 5
+    }
+  
 }
