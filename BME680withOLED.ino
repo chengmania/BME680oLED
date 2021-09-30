@@ -44,7 +44,10 @@ Adafruit_BME680 bme; // I2C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 //switch value setup
-int switchValue = 0;
+volatile int switchValue = 0;
+#define switched                            true // value if the button switch has been pressed
+#define triggered                           true // controls interrupt handler
+#define interrupt_trigger_type            FALLING // interrupt triggered on a RISING input
 
 void setup() {
 
@@ -52,7 +55,8 @@ void setup() {
   pinMode(MEDIUM, OUTPUT);
   pinMode(OKAY, OUTPUT);
   pinMode(BUTTONPIN, INPUT);
-
+  attachInterrupt(digitalPinToInterrupt(BUTTONPIN), switchMenu, interrupt_trigger_type);
+  //                                    button pin, function for switching, type of trigger ie: RISING, FALLING, etc
 
   //initialize the BME680
   bme.begin();
@@ -71,7 +75,14 @@ void setup() {
   display.setTextSize(0);             // Normal 1:1 pixel scale
   display.setTextColor(SSD1306_WHITE);        // Draw white text
 
-
+  digitalWrite(DANGER,HIGH);
+  delay(200);
+  digitalWrite(MEDIUM,HIGH);
+  delay(200);
+  digitalWrite(OKAY,HIGH);
+  delay(200);
+  display.display();
+  delay(2000);
 }
 
 void loop() {
@@ -118,7 +129,7 @@ void loop() {
       display.println(" KOhms");
       break;
     case 5: //altitude
-     display.setTextSize(0);
+      display.setTextSize(0);
       display.setCursor(42, 5);
       display.print("Altitude: ");
       display.setCursor(45, 20);
@@ -167,11 +178,16 @@ void loop() {
   //Display data
   display.display();
   //delay(2000); // Pause for 2 seconds
-  
-    if (digitalRead(BUTTONPIN) == HIGH)
-    {
+}
+
+void switchMenu() {
+  static unsigned long last_interrupt_time = 0;
+  unsigned long interrupt_time = millis();
+  // If interrupts come faster than 200ms, assume it's a bounce and ignore
+  if (interrupt_time - last_interrupt_time > 200)
+  {
     switchValue++;
     switchValue > 5 ? switchValue = 0 : switchValue = switchValue; //short hand If statement to stay below 5
-    }
-  
+  }
+  last_interrupt_time = interrupt_time;
 }
